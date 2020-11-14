@@ -110,8 +110,6 @@ abstract class Connection
         'query'           => '\\think\\db\\Query',
         // 是否需要断线重连
         'break_reconnect' => false,
-        // 数据字段缓存路径
-        'schema_path'     => '',
         // 模型类后缀
         'class_suffix'    => false,
     ];
@@ -372,9 +370,13 @@ abstract class Connection
 
         if (!isset(self::$info[$schema])) {
             // 读取缓存
-            $cacheFile = $this->config['schema_path'] . $schema . '.php';
-            if (is_file($cacheFile)) {
-                $info = include $cacheFile;
+            if (!$this->config['debug'] && $this->cache) {
+                $info = $this->cache->get($schema);
+                if (empty($info)) {
+                    $info = $this->getFields($tableName);
+                    // 缓存字段
+                    $this->cache->set($schema, $info);
+                }
             } else {
                 $info = $this->getFields($tableName);
             }
